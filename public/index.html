@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureApp — Acceso Seguro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- Lado izquierdo: decorativo -->
+    <div class="side-panel">
+      <div class="side-content">
+        <div class="logo">🔐</div>
+      
+        <ul class="features">
+          <li>✓ Validación de entradas</li>
+          <li>✓ Protección SQL Injection</li>
+          <li>✓ Contraseñas encriptadas</li>
+          <li>✓ Manejo seguro de errores</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Lado derecho: formulario -->
+    <div class="main-panel">
+      <div class="card">
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active" id="tabLogin" onclick="switchTab('login')">Iniciar Sesión</button>
+          <button class="tab" id="tabRegister" onclick="switchTab('register')">Registrarse</button>
+        </div>
+
+        <!-- Formulario Login -->
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="loginUser">Usuario</label>
+            <input type="text" id="loginUser" placeholder="Escribe tu usuario" maxlength="30" autocomplete="username" />
+          </div>
+          <div class="form-group">
+            <label for="loginPass">Contraseña</label>
+            <input type="password" id="loginPass" placeholder="Escribe tu contraseña" maxlength="72" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn" id="loginBtn">Ingresar</button>
+        </form>
+
+        <!-- Formulario Registro -->
+        <form id="registerForm" onsubmit="handleRegister(event)" style="display:none">
+          <div class="form-group">
+            <label for="regUser">Usuario</label>
+            <input type="text" id="regUser" placeholder="Elige un nombre de usuario" maxlength="30" autocomplete="username" />
+            <span class="hint">Solo letras, números y guión bajo (3–30 caracteres)</span>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Correo electrónico</label>
+            <input type="email" id="regEmail" placeholder="tu@correo.com" maxlength="100" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="regPass">Contraseña</label>
+            <input type="password" id="regPass" placeholder="Mínimo 8 caracteres" maxlength="72" autocomplete="new-password" />
+            <span class="hint">Mínimo 8 caracteres</span>
+          </div>
+          <button type="submit" class="btn" id="registerBtn">Crear cuenta</button>
+        </form>
+
+        <!-- Alerta -->
+        <div class="alert" id="alertBox"></div>
+
+        <!-- Lista de usuarios (aparece tras login/registro) -->
+        <div id="usersPanel" style="display:none">
+          <div class="divider"></div>
+          <h3 class="users-title">Usuarios registrados</h3>
+          <div id="usersList"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
