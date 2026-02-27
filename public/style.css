@@ -45,7 +45,7 @@ body {
 
 /* ─── Panel izquierdo ────────────────────────────────────────────────────── */
 .side-panel {
-  background: linear-gradient(145deg, #4361ee, #3a0ca3);
+  background: linear-gradient(145deg, #37bdbd, #3a0ca3);
   color: white;
   width: 42%;
   padding: 48px 40px;
