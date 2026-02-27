@@ -4,19 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SecureApp — Acceso Seguro</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <div class="page">
 
-   
+    <!-- Lado izquierdo: decorativo -->
     <div class="side-panel">
       <div class="side-content">
         <div class="logo">🔐</div>
-      
         <ul class="features">
           <li>✓ Validación de entradas</li>
           <li>✓ Protección SQL Injection</li>
@@ -26,7 +23,7 @@
       </div>
     </div>
 
-   
+    <!-- Lado derecho: formulario -->
     <div class="main-panel">
       <div class="card">
 
@@ -36,7 +33,7 @@
           <button class="tab" id="tabRegister" onclick="switchTab('register')">Registrarse</button>
         </div>
 
-       
+        <!-- Formulario Login -->
         <form id="loginForm" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label for="loginUser">Usuario</label>
@@ -49,7 +46,7 @@
           <button type="submit" class="btn" id="loginBtn">Ingresar</button>
         </form>
 
-        
+        <!-- Formulario Registro -->
         <form id="registerForm" onsubmit="handleRegister(event)" style="display:none">
           <div class="form-group">
             <label for="regUser">Usuario</label>
@@ -68,10 +65,10 @@
           <button type="submit" class="btn" id="registerBtn">Crear cuenta</button>
         </form>
 
-        
+        <!-- Alerta -->
         <div class="alert" id="alertBox"></div>
 
-        
+        <!-- Lista de usuarios (aparece tras login/registro) -->
         <div id="usersPanel" style="display:none">
           <div class="divider"></div>
           <h3 class="users-title">Usuarios registrados</h3>
