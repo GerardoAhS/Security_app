@@ -9,7 +9,7 @@ let initSqlJs;
 try {
   initSqlJs = require('sql.js');
 } catch (e) {
-  console.error('❌ Instala la dependencia: npm install sql.js bcryptjs');
+  console.error('Instala la dependencia: npm install sql.js bcryptjs');
   process.exit(1);
 }
 
@@ -39,7 +39,7 @@ async function initDatabase() {
   `);
 
   saveDatabase();
-  console.log('✅  Base de datos SQLite lista.');
+  console.log('Base de datos SQLite lista.');
 }
 
 
@@ -90,7 +90,7 @@ let bcrypt;
 try {
   bcrypt = require('bcryptjs');
 } catch (e) {
-  console.error('❌ Instala la dependencia: npm install bcryptjs');
+  console.error('Instala la dependencia: npm install bcryptjs');
   process.exit(1);
 }
 
