@@ -1,22 +1,10 @@
-/**
- * server.js — Backend seguro con Node.js
- *
- * Prácticas de seguridad implementadas:
- * 1. Validación de entrada (server-side)
- * 2. Prepared Statements con SQLite (protección contra SQL Injection)
- * 3. Manejo de errores personalizado (no expone internos al cliente)
- * 4. Output encoding (protección contra XSS)
- * 5. Contraseñas hasheadas con bcrypt (salt 12)
- * 6. Rate limiting básico por IP
- * 7. Security headers
- */
+
 
 const http = require('http');
 const path = require('path');
 const fs   = require('fs');
 const url  = require('url');
 
-// ─── Base de datos SQLite con sql.js (100% JavaScript, sin compilación) ──
 let initSqlJs;
 try {
   initSqlJs = require('sql.js');
@@ -27,13 +15,12 @@ try {
 
 const DB_PATH = path.join(__dirname, 'users.sqlite');
 
-let sqlDb; // instancia de la base de datos
+let sqlDb; 
 
-// Inicializar SQLite
+
 async function initDatabase() {
   const SQL = await initSqlJs();
 
-  // Si ya existe el archivo, cargarlo; si no, crear uno nuevo
   if (fs.existsSync(DB_PATH)) {
     const fileBuffer = fs.readFileSync(DB_PATH);
     sqlDb = new SQL.Database(fileBuffer);
@@ -41,7 +28,6 @@ async function initDatabase() {
     sqlDb = new SQL.Database();
   }
 
-  // Crear tabla users si no existe
   sqlDb.run(`
     CREATE TABLE IF NOT EXISTS users (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,20 +42,16 @@ async function initDatabase() {
   console.log('✅  Base de datos SQLite lista.');
 }
 
-// Guardar la base de datos en disco
+
 function saveDatabase() {
   const data = sqlDb.export();
   fs.writeFileSync(DB_PATH, Buffer.from(data));
 }
 
-// ─── Prepared Statements (protección contra SQL Injection) ───────────────
-// Los valores del usuario NUNCA se concatenan en el SQL.
-// Se pasan como parámetros separados con :username, :email, etc.
 
 const db = {
 
   findByUsername(username) {
-    // Prepared Statement: SELECT * FROM users WHERE username = :username
     const stmt   = sqlDb.prepare('SELECT * FROM users WHERE username = :username');
     const result = stmt.getAsObject({ ':username': username });
     stmt.free();
@@ -77,7 +59,6 @@ const db = {
   },
 
   findByEmail(email) {
-    // Prepared Statement: SELECT * FROM users WHERE email = :email
     const stmt   = sqlDb.prepare('SELECT * FROM users WHERE email = :email');
     const result = stmt.getAsObject({ ':email': email });
     stmt.free();
@@ -85,17 +66,15 @@ const db = {
   },
 
   insertUser(username, email, hashedPassword) {
-    // Prepared Statement: INSERT con parámetros, nunca concatenación
     const stmt = sqlDb.prepare(
       'INSERT INTO users (username, email, password) VALUES (:username, :email, :password)'
     );
     stmt.run({ ':username': username, ':email': email, ':password': hashedPassword });
     stmt.free();
-    saveDatabase(); // persistir en disco
+    saveDatabase(); 
   },
 
   getAllUsers() {
-    // Nunca devolver el campo password al cliente
     const stmt    = sqlDb.prepare('SELECT id, username, email, created_at FROM users');
     const users   = [];
     while (stmt.step()) {
@@ -107,7 +86,6 @@ const db = {
 
 };
 
-// ─── bcryptjs (100% JavaScript, sin compilación) ─────────────────────────
 let bcrypt;
 try {
   bcrypt = require('bcryptjs');
@@ -116,28 +94,24 @@ try {
   process.exit(1);
 }
 
-// ─── Rate Limiting simple ─────────────────────────────────────────────────
 const rateLimitMap = new Map();
 
 function rateLimit(ip) {
   const MAX_REQUESTS = 20;
-  const WINDOW_MS    = 60 * 1000; // 1 minuto
+  const WINDOW_MS    = 60 * 1000; 
   const now          = Date.now();
   const entry        = rateLimitMap.get(ip) || { count: 0, start: now };
 
   if (now - entry.start > WINDOW_MS) {
     rateLimitMap.set(ip, { count: 1, start: now });
-    return false; // no bloqueado
+    return false; 
   }
 
   entry.count++;
   rateLimitMap.set(ip, entry);
-  return entry.count > MAX_REQUESTS; // true = bloqueado
+  return entry.count > MAX_REQUESTS; 
 }
 
-// ─── Validación de entrada (server-side) ─────────────────────────────────
-// La validación client-side es conveniente pero NO es segura por sí sola.
-// SIEMPRE se debe validar también en el servidor.
 
 function validateInput(data) {
   const errors = [];
@@ -163,7 +137,6 @@ function validateInput(data) {
   return errors;
 }
 
-// ─── Output Encoding (previene XSS) ──────────────────────────────────────
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g,  '&amp;')
@@ -173,16 +146,12 @@ function escapeHtml(str) {
     .replace(/'/g,  '&#x27;');
 }
 
-// ─── Helpers de respuesta HTTP ────────────────────────────────────────────
 function sendJSON(res, statusCode, data) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
 }
 
 function sendError(res, statusCode, message) {
-  // Controlador de errores personalizado:
-  // El cliente recibe un mensaje claro pero genérico.
-  // Los detalles técnicos solo se imprimen en la consola del servidor.
   sendJSON(res, statusCode, { success: false, message: message });
 }
 
@@ -200,7 +169,6 @@ function parseBody(req) {
   });
 }
 
-// ─── Tipos MIME para archivos estáticos ──────────────────────────────────
 const MIME_TYPES = {
   '.html': 'text/html',
   '.css':  'text/css',
@@ -209,23 +177,19 @@ const MIME_TYPES = {
   '.ico':  'image/x-icon',
 };
 
-// ─── Servidor HTTP ────────────────────────────────────────────────────────
 const server = http.createServer(async function(req, res) {
   const clientIp  = req.socket.remoteAddress;
   const parsedUrl = url.parse(req.url, true);
   const pathname  = parsedUrl.pathname;
 
-  // Rate limiting
   if (rateLimit(clientIp)) {
     return sendError(res, 429, 'Demasiadas solicitudes. Espera un momento.');
   }
 
-  // Security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
 
-  // ── Archivos estáticos (HTML, CSS, JS) ─────────────────────────────────
   if (req.method === 'GET' && !pathname.startsWith('/api/')) {
     let filePath = path.join(__dirname, 'public', pathname === '/' ? 'index.html' : pathname);
     const ext    = path.extname(filePath);
@@ -240,12 +204,10 @@ const server = http.createServer(async function(req, res) {
     }
   }
 
-  // ── POST /api/register ─────────────────────────────────────────────────
   if (req.method === 'POST' && pathname === '/api/register') {
     try {
       const body = await parseBody(req);
 
-      // 1. Validación de entrada
       const errors = validateInput({ username: body.username, email: body.email, password: body.password });
       if (errors.length > 0) {
         return sendError(res, 400, errors.join(' '));
@@ -255,7 +217,6 @@ const server = http.createServer(async function(req, res) {
       const email    = body.email.trim().toLowerCase();
       const password = body.password;
 
-      // 2. Verificar que no exista (query parametrizada)
       if (db.findByUsername(username)) {
         return sendError(res, 409, 'Ese nombre de usuario ya existe.');
       }
@@ -263,10 +224,8 @@ const server = http.createServer(async function(req, res) {
         return sendError(res, 409, 'Ese correo ya está registrado.');
       }
 
-      // 3. Hashear contraseña con bcrypt (salt 12)
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // 4. Guardar usuario
       db.insertUser(username, email, hashedPassword);
 
       return sendJSON(res, 201, {
@@ -275,18 +234,15 @@ const server = http.createServer(async function(req, res) {
       });
 
     } catch (err) {
-      // Error interno: solo se imprime en consola, no se expone al cliente
       console.error('[REGISTER ERROR]', err.message);
       return sendError(res, 500, 'Error interno del servidor.');
     }
   }
 
-  // ── POST /api/login ────────────────────────────────────────────────────
   if (req.method === 'POST' && pathname === '/api/login') {
     try {
       const body = await parseBody(req);
 
-      // 1. Validación de entrada
       const errors = validateInput({ username: body.username, password: body.password });
       if (errors.length > 0) {
         return sendError(res, 400, errors.join(' '));
@@ -295,15 +251,12 @@ const server = http.createServer(async function(req, res) {
       const username = body.username.trim();
       const password = body.password;
 
-      // 2. Buscar usuario (query parametrizada)
       const user = db.findByUsername(username);
 
-      // 3. Mensaje genérico si falla (no revelar si el usuario existe o no)
       if (!user) {
         return sendError(res, 401, 'Credenciales incorrectas.');
       }
 
-      // 4. Comparar contraseña con hash (bcrypt)
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) {
         return sendError(res, 401, 'Credenciales incorrectas.');
@@ -321,7 +274,6 @@ const server = http.createServer(async function(req, res) {
     }
   }
 
-  // ── GET /api/users ─────────────────────────────────────────────────────
   if (req.method === 'GET' && pathname === '/api/users') {
     try {
       return sendJSON(res, 200, { success: true, users: db.getAllUsers() });
@@ -331,18 +283,15 @@ const server = http.createServer(async function(req, res) {
     }
   }
 
-  // ── 404 personalizado ──────────────────────────────────────────────────
   sendError(res, 404, 'Ruta no encontrada.');
 });
 
-// ─── Iniciar servidor ─────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
-// Primero inicializar SQLite, luego arrancar el servidor
 initDatabase().then(function() {
   server.listen(PORT, function() {
-    console.log('\n✅  Servidor corriendo en http://localhost:' + PORT);
-    console.log('\n🔒  Prácticas de seguridad activas:');
+    console.log('\nServidor corriendo en http://localhost:' + PORT);
+    console.log('\nPrácticas de seguridad activas:');
     console.log('     1. Validación de entrada (server-side + client-side)');
     console.log('     2. Prepared Statements SQLite (anti SQL Injection)');
     console.log('     3. Passwords hasheadas con bcrypt (salt 12)');
@@ -352,6 +301,6 @@ initDatabase().then(function() {
     console.log('     7. Security headers\n');
   });
 }).catch(function(err) {
-  console.error('❌ Error iniciando base de datos:', err.message);
+  console.error('Error iniciando base de datos:', err.message);
   process.exit(1);
 });

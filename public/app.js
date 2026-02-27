@@ -1,5 +1,3 @@
-// ─── Validación client-side ───────────────────────────────────────────────
-// Primera línea de defensa antes de enviar al servidor
 
 function validateUsername(value) {
   return /^[a-zA-Z0-9_]{3,30}$/.test(value.trim());
@@ -13,20 +11,16 @@ function validatePassword(value) {
   return value.length >= 8 && value.length <= 72;
 }
 
-// ─── Output encoding (previene XSS al insertar datos en el DOM) ──────────
-// Nunca usar innerHTML con datos del servidor sin pasar por esta función
 
 function escapeHtml(str) {
   const div = document.createElement('div');
-  div.textContent = String(str); // textContent no interpreta HTML
+  div.textContent = String(str); 
   return div.innerHTML;
 }
 
-// ─── Helpers de UI ────────────────────────────────────────────────────────
-
 function showAlert(message, type = 'error') {
   const box = document.getElementById('alertBox');
-  box.textContent = message; // textContent = anti XSS, no innerHTML
+  box.textContent = message; 
   box.className = `alert ${type} show`;
 }
 
@@ -44,7 +38,6 @@ function setLoading(btnId, loading) {
   }
 }
 
-// ─── Cambiar entre tabs ───────────────────────────────────────────────────
 
 function switchTab(tab) {
   const isLogin = tab === 'login';
@@ -58,7 +51,7 @@ function switchTab(tab) {
   hideAlert();
 }
 
-// ─── Login ────────────────────────────────────────────────────────────────
+
 
 async function handleLogin(event) {
   event.preventDefault();
@@ -103,8 +96,6 @@ async function handleLogin(event) {
   }
 }
 
-// ─── Registro ─────────────────────────────────────────────────────────────
-
 async function handleRegister(event) {
   event.preventDefault();
   hideAlert();
@@ -113,7 +104,6 @@ async function handleRegister(event) {
   const email    = document.getElementById('regEmail').value;
   const password = document.getElementById('regPass').value;
 
-  // Validación client-side
   if (!validateUsername(username)) {
     return showAlert('Usuario inválido: solo letras, números y _ (3–30 caracteres).');
   }
@@ -154,7 +144,6 @@ async function handleRegister(event) {
   }
 }
 
-// ─── Cargar y mostrar usuarios ────────────────────────────────────────────
 
 async function loadUsers() {
   try {
@@ -173,7 +162,6 @@ async function loadUsers() {
       const row = document.createElement('div');
       row.className = 'user-row';
 
-      // Se usa escapeHtml en todos los datos antes de insertarlos en el DOM
       const initial = escapeHtml(user.username.charAt(0).toUpperCase());
       const name    = escapeHtml(user.username);
       const email   = escapeHtml(user.email);
@@ -190,7 +178,6 @@ async function loadUsers() {
     });
 
   } catch (error) {
-    // Error silencioso — no crítico para el usuario
     console.error('Error cargando usuarios:', error);
   }
 }

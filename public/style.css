@@ -1,4 +1,4 @@
-/* ─── Variables ─────────────────────────────────────────────────────────── */
+
 :root {
   --bg:         #f4f6f9;
   --white:      #ffffff;
@@ -15,7 +15,7 @@
   --font-serif: 'Lora', serif;
 }
 
-/* ─── Reset ─────────────────────────────────────────────────────────────── */
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -32,7 +32,7 @@ body {
   justify-content: center;
 }
 
-/* ─── Layout ─────────────────────────────────────────────────────────────── */
+
 .page {
   display: flex;
   width: 100%;
@@ -43,7 +43,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* ─── Panel izquierdo ────────────────────────────────────────────────────── */
+
 .side-panel {
   background: linear-gradient(145deg, #37bdbd, #3a0ca3);
   color: white;
@@ -111,7 +111,7 @@ body {
   animation: fadeUp 0.5s ease both;
 }
 
-/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+
 .tabs {
   display: flex;
   gap: 0;
@@ -141,7 +141,7 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* ─── Formulario ─────────────────────────────────────────────────────────── */
+
 .form-group {
   margin-bottom: 18px;
   display: flex;
@@ -184,7 +184,7 @@ input::placeholder {
   color: var(--muted);
 }
 
-/* ─── Botón ──────────────────────────────────────────────────────────────── */
+
 .btn {
   width: 100%;
   padding: 13px;
@@ -215,7 +215,7 @@ input::placeholder {
   transform: none;
 }
 
-/* ─── Alerta ─────────────────────────────────────────────────────────────── */
+
 .alert {
   display: none;
   margin-top: 16px;
@@ -240,7 +240,6 @@ input::placeholder {
   color: #1a9e96;
 }
 
-/* ─── Lista de usuarios ──────────────────────────────────────────────────── */
 .divider {
   height: 1px;
   background: var(--border);
@@ -292,13 +291,13 @@ input::placeholder {
   color: var(--muted);
 }
 
-/* ─── Animación ──────────────────────────────────────────────────────────── */
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
 @media (max-width: 680px) {
   .page { flex-direction: column; border-radius: 0; }
   .side-panel { width: 100%; padding: 32px 24px; }
