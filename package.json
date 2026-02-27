@@ -1,13 +1,14 @@
 {
   "name": "secure-app",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Aplicación web segura contra SQL injection y entradas maliciosas",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "sql.js": "^1.12.0"
   },
   "engines": {
     "node": ">=16.0.0"

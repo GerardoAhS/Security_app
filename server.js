@@ -3,7 +3,7 @@
  *
  * Prácticas de seguridad implementadas:
  * 1. Validación de entrada (server-side)
- * 2. Queries parametrizadas (protección contra SQL Injection)
+ * 2. Prepared Statements con SQLite (protección contra SQL Injection)
  * 3. Manejo de errores personalizado (no expone internos al cliente)
  * 4. Output encoding (protección contra XSS)
  * 5. Contraseñas hasheadas con bcrypt (salt 12)
@@ -16,58 +16,93 @@ const path = require('path');
 const fs   = require('fs');
 const url  = require('url');
 
-// ─── Base de datos JSON (puro Node.js, sin compilación) ──────────────────
-const DB_PATH = path.join(__dirname, 'users_db.json');
+// ─── Base de datos SQLite con sql.js (100% JavaScript, sin compilación) ──
+let initSqlJs;
+try {
+  initSqlJs = require('sql.js');
+} catch (e) {
+  console.error('❌ Instala la dependencia: npm install sql.js bcryptjs');
+  process.exit(1);
+}
 
-function loadDB() {
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ users: [] }, null, 2));
+const DB_PATH = path.join(__dirname, 'users.sqlite');
+
+let sqlDb; // instancia de la base de datos
+
+// Inicializar SQLite
+async function initDatabase() {
+  const SQL = await initSqlJs();
+
+  // Si ya existe el archivo, cargarlo; si no, crear uno nuevo
+  if (fs.existsSync(DB_PATH)) {
+    const fileBuffer = fs.readFileSync(DB_PATH);
+    sqlDb = new SQL.Database(fileBuffer);
+  } else {
+    sqlDb = new SQL.Database();
   }
-  return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+
+  // Crear tabla users si no existe
+  sqlDb.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      username   TEXT UNIQUE NOT NULL,
+      email      TEXT UNIQUE NOT NULL,
+      password   TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+  saveDatabase();
+  console.log('✅  Base de datos SQLite lista.');
 }
 
-function saveDB(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+// Guardar la base de datos en disco
+function saveDatabase() {
+  const data = sqlDb.export();
+  fs.writeFileSync(DB_PATH, Buffer.from(data));
 }
 
-// ─── Queries parametrizadas (equivalente a Prepared Statements) ──────────
-// Nunca se concatenan strings del usuario en las búsquedas.
-// Siempre comparamos por valor exacto — esto previene SQL/NoSQL Injection.
+// ─── Prepared Statements (protección contra SQL Injection) ───────────────
+// Los valores del usuario NUNCA se concatenan en el SQL.
+// Se pasan como parámetros separados con :username, :email, etc.
 
 const db = {
 
   findByUsername(username) {
-    const data = loadDB();
-    // Equivalente a: SELECT * FROM users WHERE username = ?
-    return data.users.find(u => u.username === username) || null;
+    // Prepared Statement: SELECT * FROM users WHERE username = :username
+    const stmt   = sqlDb.prepare('SELECT * FROM users WHERE username = :username');
+    const result = stmt.getAsObject({ ':username': username });
+    stmt.free();
+    return result.id ? result : null;
   },
 
   findByEmail(email) {
-    const data = loadDB();
-    // Equivalente a: SELECT * FROM users WHERE email = ?
-    return data.users.find(u => u.email === email) || null;
+    // Prepared Statement: SELECT * FROM users WHERE email = :email
+    const stmt   = sqlDb.prepare('SELECT * FROM users WHERE email = :email');
+    const result = stmt.getAsObject({ ':email': email });
+    stmt.free();
+    return result.id ? result : null;
   },
 
   insertUser(username, email, hashedPassword) {
-    const data = loadDB();
-    const newUser = {
-      id:         Date.now(),
-      username:   username,
-      email:      email,
-      password:   hashedPassword, // nunca texto plano
-      created_at: new Date().toISOString(),
-    };
-    data.users.push(newUser);
-    saveDB(data);
-    return newUser;
+    // Prepared Statement: INSERT con parámetros, nunca concatenación
+    const stmt = sqlDb.prepare(
+      'INSERT INTO users (username, email, password) VALUES (:username, :email, :password)'
+    );
+    stmt.run({ ':username': username, ':email': email, ':password': hashedPassword });
+    stmt.free();
+    saveDatabase(); // persistir en disco
   },
 
   getAllUsers() {
-    const data = loadDB();
     // Nunca devolver el campo password al cliente
-    return data.users.map(function(u) {
-      return { id: u.id, username: u.username, email: u.email, created_at: u.created_at };
-    });
+    const stmt    = sqlDb.prepare('SELECT id, username, email, created_at FROM users');
+    const users   = [];
+    while (stmt.step()) {
+      users.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return users;
   },
 
 };
@@ -303,14 +338,20 @@ const server = http.createServer(async function(req, res) {
 // ─── Iniciar servidor ─────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, function() {
-  console.log('\n✅  Servidor corriendo en http://localhost:' + PORT);
-  console.log('\n🔒  Prácticas de seguridad activas:');
-  console.log('     1. Validación de entrada (server-side + client-side)');
-  console.log('     2. Queries parametrizadas (anti SQL Injection)');
-  console.log('     3. Passwords hasheadas con bcrypt (salt 12)');
-  console.log('     4. Manejo de errores personalizado');
-  console.log('     5. Output encoding (anti XSS)');
-  console.log('     6. Rate limiting (20 req/min por IP)');
-  console.log('     7. Security headers\n');
+// Primero inicializar SQLite, luego arrancar el servidor
+initDatabase().then(function() {
+  server.listen(PORT, function() {
+    console.log('\n✅  Servidor corriendo en http://localhost:' + PORT);
+    console.log('\n🔒  Prácticas de seguridad activas:');
+    console.log('     1. Validación de entrada (server-side + client-side)');
+    console.log('     2. Prepared Statements SQLite (anti SQL Injection)');
+    console.log('     3. Passwords hasheadas con bcrypt (salt 12)');
+    console.log('     4. Manejo de errores personalizado');
+    console.log('     5. Output encoding (anti XSS)');
+    console.log('     6. Rate limiting (20 req/min por IP)');
+    console.log('     7. Security headers\n');
+  });
+}).catch(function(err) {
+  console.error('❌ Error iniciando base de datos:', err.message);
+  process.exit(1);
 });
